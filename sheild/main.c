@@ -17,7 +17,6 @@
 
 
 int main(void){
-	//printf("breakpoint");
 	int 			res;
 	char 			gatewayMac[18];
 	char 			dev[10];
