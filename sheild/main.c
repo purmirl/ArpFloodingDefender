@@ -42,24 +42,28 @@ int main(void){
 	for(i = 0; i < 10; i++){
 		dev[i] = '\0';
 	}	
-	
+
 	// find gateway ip address 
-	fp = popen("netstat -rn | grep 0.0.0.0 | sed -n 1p | awk '{print $2}'", "r");
+	//fp = popen("netstat -rn | grep 0.0.0.0 | sed -n 1p | awk '{print $2}'", "r");
+	fp = popen("ip route show | grep -i 'default via' | awk '{print $3}'", "r");
 	if(fp == NULL){
 		perror("popen is failed");
 		return -1;
 	}
 	fscanf(fp, "%s", gatewayIp);
 	pclose(fp);
+	//printf("gateway ip : %s\n", gatewayIp);
 
 	// find device name
-	fp = popen("route | grep 0.0.0.0 | sed -n 1p | awk '{print $8}'", "r");
+	//fp = popen("route | grep 0.0.0.0 | sed -n 1p | awk '{print $8}'", "r");
+	fp = popen("ip route show | grep -i 'default via' | awk '{print $5}'", "r");
 	if(fp == NULL){
 		perror("popen is failed");
 		return -1;
 	}
 	fscanf(fp, "%s", dev);
 	pclose(fp);
+	//printf("dev : %s", dev);
 
 	// find my mac address
 	fp = popen("ifconfig | grep HWaddr | awk '{print $5'}", "r");
@@ -69,6 +73,7 @@ int main(void){
 	}
 	fscanf(fp, "%s", myMac);
 	pclose(fp);
+	//printf("my mac : %s", myMac);
 
 	// find my ip address
 	fp = popen("ifconfig | grep addr: | sed -n 1p | awk '{print $2'}", "r");
@@ -80,6 +85,7 @@ int main(void){
 	pclose(fp);
 	myIp = strtok(tempStr, ":");
 	myIp = strtok(NULL, ":");
+	//printf("my ip : %s", myIp);
 
 	// pcap ready
 	if(dev == NULL){
@@ -129,8 +135,9 @@ int main(void){
 		eth = (struct ether_header *)packet;
 		arp = (struct ether_arp *)(packet + ETH_HLEN);
 
-		if(ntohs(eth->ether_type) == ETHERTYPE_ARP){
+		if((ntohs(eth->ether_type) == ETHERTYPE_ARP) && (arp->arp_op == htons(ARPOP_REPLY))){
 			sprintf(gatewayMac, "%s", ether_ntoa(((struct ether_addr *)arp->arp_sha)));
+			//printf("%s %s\n", gatewayIp, gatewayMac);
 			break;
 		}
 	}
